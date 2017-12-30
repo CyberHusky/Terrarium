@@ -36,7 +36,7 @@ float proc_water_buf;
 int proc_water;
 String Plant1_info, Plant2_info, Plant3_info, Plant4_info;
 long int delay_time = 3000; // delay time between reading the sensors
-String ver = "v1.3.0";
+String ver = "v1.3.1";
 
 int wakePin = 2; // pin used for waking up
 int sleepStatus = 0; // variable to store a request for sleep
@@ -220,28 +220,28 @@ Serial.println(count);
 String Plants_info(int Plant_level, String Plant_num){ // plant water level function
 String info;
 
-if (Plant_level > 1 && Plant_level < 500){
+if (Plant_level > 1 && Plant_level < 400){
   info = {"Plant "+Plant_num+" : ~~~~~~~"};
 }
-else if (Plant_level >= 500 && Plant_level < 550){
+else if (Plant_level >= 400 && Plant_level < 450){
   info = {"Plant "+Plant_num+" : ~~~~~~"};
 }
-else if (Plant_level >= 550 && Plant_level < 600){
+else if (Plant_level >= 450 && Plant_level < 500){
   info = {"Plant "+Plant_num+" : ~~~~~"};
 }
-else if (Plant_level >= 600 && Plant_level < 650){
+else if (Plant_level >= 500 && Plant_level < 550){
   info = {"Plant "+Plant_num+" : ~~~~"};
 }
-else if (Plant_level >= 650 && Plant_level < 700){
+else if (Plant_level >= 550 && Plant_level < 600){
   info = {"Plant "+Plant_num+" : ~~~"};
 }
-else if (Plant_level >= 700 && Plant_level < 750){
+else if (Plant_level >= 600 && Plant_level < 650){
   info = {"Plant "+Plant_num+" : ~~"};
 }
-else if (Plant_level >= 750 && Plant_level < 800){
+else if (Plant_level >= 650 && Plant_level < 700){
   info = {"Plant "+Plant_num+" : ~"};
 }
-else if (Plant_level >= 800){
+else if (Plant_level >= 700){
   info = {"Plant "+Plant_num+" : need water!!!"};
 }
 else if (Plant_level <= 1){
