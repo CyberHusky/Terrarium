@@ -19,7 +19,6 @@ Tested on Arduino UNO on Arduino v1.6.
 
 */
 
-#include <avr/sleep.h>
 #include <OLED_I2C.h>
 
 OLED  myOLED(SDA, SCL, 8);
@@ -37,13 +36,15 @@ int proc_water;
 float mean_water;
 float proc_water_buf;
 String Plant1_info, Plant2_info, Plant3_info, Plant4_info;
-String ver = "v1.3.1";
+String ver = "v1.4.0";
 long int delay_time = 3000; // delay time between reading the sensors
 
 
 int wakePin		= 2; // pin used for waking up
 int sleepStatus = 0; // variable to store a request for sleep
 int count 		= 0; // counter
+
+
 
 
 
@@ -68,76 +69,14 @@ void setup() {
 	pinMode(6, OUTPUT);
 	pinMode(9, OUTPUT);
 
-	pinMode(11, OUTPUT);
-	digitalWrite(11, HIGH); // ???
-  
-	pinMode(wakePin, INPUT);
-
-	attachInterrupt(digitalPinToInterrupt(wakePin), wakeUpNow, HIGH); // use interrupt 0 (pin 2) and run function
-                                      // wakeUpNow when pin 2 gets LOW 
-
-
-
-
-//  set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-//  sleep_enable();
-//  sleep_cpu (); 
- 
-}
-
-
-void sleepNow()         // here we put the arduino to sleep
-{
-    /* Now is the time to set the sleep mode. In the Atmega8 datasheet
-     * http://www.atmel.com/dyn/resources/prod_documents/doc2486.pdf on page 35
-     * there is a list of sleep modes which explains which clocks and
-     * wake up sources are available in which sleep mode.
-     *
-     * In the avr/sleep.h file, the call names of these sleep modes are to be found:
-     *
-     * The 5 different modes are:
-     *     SLEEP_MODE_IDLE         -the least power savings
-     *     SLEEP_MODE_ADC
-     *     SLEEP_MODE_PWR_SAVE
-     *     SLEEP_MODE_STANDBY
-     *     SLEEP_MODE_PWR_DOWN     -the most power savings
-     *
-     * For now, we want as much power savings as possible, so we
-     * choose the according
-     * sleep mode: SLEEP_MODE_PWR_DOWN
-     *
-     */  
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here
- 
-    sleep_enable();          // enables the sleep bit in the mcucr register
-                             // so sleep is possible. just a safety pin
-
-    //sleep_cpu ();
-   
-    attachInterrupt(digitalPinToInterrupt(wakePin),wakeUpNow, HIGH); // use interrupt 0 (pin 2) and run function
-                                       // wakeUpNow when pin 2 gets LOW
- 
-    sleep_mode();            // here the device is actually put to sleep!!
-                             // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
-
-    //loop();
-
-    sleep_disable();         // first thing after waking from sleep:
-                             // disable sleep...
-    detachInterrupt(digitalPinToInterrupt(wakePin));      // disables interrupt 0 on pin 2 so the
-                             // wakeUpNow code will not be executed
-                             // during normal running time.
- 
-}
-
-void wakeUpNow()        // here the interrupt is handled after wakeup
-{
-  // execute code here after wake-up before returning to the loop() function
-  // timers and code using timers (serial.print and more...) will not work here.
-  // we don't really need to execute any special functions here, since we
-  // just want the thing to wake up
+	pinMode(11, OUTPUT); // Pin for diod
+	pinMode(12, OUTPUT);
+	pinMode(13, OUTPUT);
+	digitalWrite(11, HIGH); 
   
 }
+
+
 // -------------------------------------------
 // ==================  LOOP ==================
 // -------------------------------------------
@@ -197,20 +136,11 @@ void loop() {
 	delay(1000);
 
 	Serial.println(count);
-	if (count >= 5) 
-	{
-		Serial.println("Timer: Entering Sleep mode");
-		myOLED.clrScr();
-		myOLED.update();
-		delay(delay_time);     // this delay is needed, the sleep
-                      //function will provoke a Serial error otherwise!!
-		count = 0;
 
-		sleepNow();     // sleep function called here
-	}
-
-
-//sleepNow();
+	Serial.println("Timer: Entering Sleep mode");
+	myOLED.clrScr();
+	myOLED.update();
+	delay(delay_time);     // this delay is needed, the sleep
 
 }
 
