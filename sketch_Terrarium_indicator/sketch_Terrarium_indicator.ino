@@ -1,14 +1,13 @@
 /*
 ============== Hello! ==============
-This is the project that could help you to control watering flowers on OLED display. Point of project is code realization, 
-that you could put your Arduino board in sleeping mode and awake it by pressing the button. I’ve used 10000mAh battery on Arduino UNO, 
-that powered my project all week. If you use another board (Arduino nano or mini) it will powered project more long.
-gff
+This is the project that could help you to control watering flowers on OLED display. 
+This is the fork of original project, that include RGB diod for indicate of plants water.
+
 What you required?
 - Arduino UNO (or another arduino board);
 - OLED display 0,96’’  I2C 128x64 (or another);
 - 4 soil humidity sensor;
-- 1 button.
+- RGB diod.
 
 Main scheme presented in fritzing file. 
 
@@ -21,7 +20,7 @@ Tested on Arduino UNO on Arduino v1.6.
 
 #include <OLED_I2C.h>
 
-OLED  myOLED(SDA, SCL, 8);
+OLED myOLED(SDA, SCL, 8);
 
 extern uint8_t SmallFont[];
 extern uint8_t MediumNumbers[];
@@ -37,15 +36,36 @@ float mean_water;
 float proc_water_buf;
 String Plant1_info, Plant2_info, Plant3_info, Plant4_info;
 String ver = "v1.4.0";
-long int delay_time = 3000; // delay time between reading the sensors
+long int delay_time = 10000; // delay time between reading the sensors
 
 
-int wakePin		= 2; // pin used for waking up
+int wakePin		  = 2; // pin used for waking up
 int sleepStatus = 0; // variable to store a request for sleep
-int count 		= 0; // counter
+size_t count 		= 0; // counter
 
 
+struct RGB{
+  int REDpin    = 13;
+  int GREENpin  = 12;
+  int BLUEpin   = 11;
 
+  void setRed(){
+    digitalWrite(REDpin,   HIGH);
+    digitalWrite(GREENpin, LOW);
+    digitalWrite(BLUEpin,  LOW);
+  }
+  void setBlue(){
+    digitalWrite(REDpin,   LOW);
+    digitalWrite(GREENpin, LOW);
+    digitalWrite(BLUEpin,  HIGH);
+  }
+  void setGreen(){
+    digitalWrite(REDpin,   LOW);
+    digitalWrite(GREENpin, HIGH);
+    digitalWrite(BLUEpin,  LOW);
+  }
+  
+}RGB_diod;
 
 
 
@@ -68,12 +88,11 @@ void setup() {
 	pinMode(5, OUTPUT);
 	pinMode(6, OUTPUT);
 	pinMode(9, OUTPUT);
-
-	pinMode(11, OUTPUT); // Pin for diod
-	pinMode(12, OUTPUT);
-	pinMode(13, OUTPUT);
-	digitalWrite(11, HIGH); 
-  
+						          // Pin for diod
+	pinMode(RGB_diod.BLUEpin,  OUTPUT); // Blue
+	pinMode(RGB_diod.GREENpin, OUTPUT); // Green
+	pinMode(RGB_diod.REDpin,   OUTPUT); // Red
+	  
 }
 
 
@@ -86,21 +105,25 @@ void loop() {
 	digitalWrite(3, HIGH);
 	delay(100); // we need to stop for a while, becouse analog pin need time for start working
 	Plant1 = analogRead(A0);
+  Serial.print("Plant1: ");
 	Serial.println(Plant1);
 
 	digitalWrite(5, HIGH);
 	delay(100); // we need to stop for a while, becouse analog pin need time for start working
 	Plant2 = analogRead(A1);
+  Serial.print("Plant2: ");
 	Serial.println(Plant2);
 
 	digitalWrite(6, HIGH);
 	delay(100); // we need to stop for a while, becouse analog pin need time for start working
 	Plant3 = analogRead(A2);
+  Serial.print("Plant3: ");
 	Serial.println(Plant3);
 
 	digitalWrite(9, HIGH);
 	delay(100); // we need to stop for a while, becouse analog pin need time for start working
 	Plant4 = analogRead(A3);
+  Serial.print("Plant4: ");
 	Serial.println(Plant4);
 
 
@@ -115,12 +138,13 @@ void loop() {
 	mean_water = (Plant1 + Plant2 + Plant3 + Plant4)/4; // mean of water saturation
 	proc_water_buf = round (( (1024-mean_water) / 1024)*100); // procent of water saturation
 	proc_water = proc_water_buf; // Take fixed part of result
-	Serial.println(proc_water);
+	Serial.print(proc_water);
+  Serial.println("%");
 
-	Plant1_info = Plants_info(Plant1,"1"); // function that make an String information about plant water level
-	Plant2_info = Plants_info(Plant2,"2");
-	Plant3_info = Plants_info(Plant3,"3");
-	Plant4_info = Plants_info(Plant4,"4");
+	Plant1_info = Plants_info(Plant1, "1"); // function that make an String information about plant water level
+	Plant2_info = Plants_info(Plant2, "2");
+	Plant3_info = Plants_info(Plant3, "3");
+	Plant4_info = Plants_info(Plant4, "4");
 
 	myOLED.clrScr();
 
@@ -129,19 +153,20 @@ void loop() {
 	myOLED.print(Plant2_info, LEFT, 26);
 	myOLED.print(Plant3_info, LEFT, 36);
 	myOLED.print(Plant4_info, LEFT, 46);
-	myOLED.print({"Water saturation: "+ String(proc_water, DEC)+"%"}, LEFT, 56);
+	myOLED.print({ "Water saturation: " + String(proc_water, DEC) + "%"}, LEFT, 56);
 	myOLED.update();
 
-//delay(delay_time);
-	delay(1000);
+  // ----------diod-------
+  if(proc_water < 60)
+    PlantSOS(RGB_diod.REDpin, RGB_diod.GREENpin, RGB_diod.BLUEpin);
+  else if (proc_water >= 60 && proc_water < 65)
+    RGB_diod.setBlue();
+  else if (proc_water >= 65)
+    RGB_diod.setGreen();
 
-	Serial.println(count);
-
-	Serial.println("Timer: Entering Sleep mode");
-	myOLED.clrScr();
-	myOLED.update();
-	delay(delay_time);     // this delay is needed, the sleep
-
+  // ---------------------
+  
+  delay(delay_time);  // delay time - between reading the sensors
 }
 
 
@@ -151,8 +176,41 @@ void loop() {
 // ==================  FUNCTIONS ==================
 // -------------------------------------------
 
-String Plants_info(int Plant_level, String Plant_num)
-{ // plant water level function
+// Plant SOS signal
+void PlantSOS(int red_pin, int green_pin, int blue_pin){
+  digitalWrite(green_pin, LOW);
+  digitalWrite(blue_pin,  LOW);
+  
+  for (int i = 0; i < 3; i++) 
+  {
+    digitalWrite(red_pin, HIGH);
+    delay(250);        
+    digitalWrite(red_pin, LOW); 
+    delay(100);         
+   }
+   delay(300);
+   for (int i = 0; i < 3; i++) 
+   {
+    digitalWrite(red_pin, HIGH);
+    delay(500);        
+    digitalWrite(red_pin, LOW); 
+    delay(100);         
+   }
+   delay(300);
+   for (int i = 0; i < 3; i++) 
+   {
+    digitalWrite(red_pin, HIGH);
+    delay(250);       
+    digitalWrite(red_pin, LOW); 
+    delay(100);        
+   }
+  delay(1000); // ждем 1 секунд
+  Serial.println( "Plants make the SOS signal!!!" );
+}
+
+
+// Plant water level function
+String Plants_info(int Plant_level, String Plant_num){ 
 	String info;
 
 	if (Plant_level > 1 && Plant_level < 400)
